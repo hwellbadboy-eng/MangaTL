@@ -37,10 +37,11 @@ jobs:
         run: |
           if [ -n "$KS_B64" ]; then
             echo "$KS_B64" | base64 -d > keystore.jks
-          elif [ -f bunnytl.jks ]; then
-            cp bunnytl.jks keystore.jks
           else
-            echo "Keystore tidak ditemukan (secret KEYSTORE_BASE64 atau file bunnytl.jks)"; exit 1
+            F=$(find . -maxdepth 1 -type f \( -iname '*.jks' -o -iname '*.keystore' -o -iname '*.p12' -o -iname '*.pfx' \) | head -1)
+            if [ -z "$F" ]; then echo "Tidak ada file keystore di root repo"; ls -la; exit 1; fi
+            echo "Pakai keystore: $F"
+            cp "$F" keystore.jks
           fi
 
       - name: Tanda tangani APK
@@ -51,15 +52,4 @@ jobs:
         run: |
           BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" sign \
-            --ks keystore.jks \
-            --ks-pass env:KS_PASS \
-            --ks-key-alias "$KS_ALIAS" \
-            --key-pass env:KEY_PASS \
-            --out BunnyTL-signed.apk \
-            proj/app/build/outputs/apk/debug/app-debug.apk
-          "$BT/apksigner" verify --print-certs BunnyTL-signed.apk | head -3
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: BunnyTL-signed-apk
-          path: BunnyTL-signed.apk
+            --ks
