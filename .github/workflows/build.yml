@@ -31,11 +31,10 @@ jobs:
         run: |
           mkdir -p proj
 
-          ZIP="${{ github.event.inputs.zip }}"
+          ZIP="${{ inputs.zip }}"
 
           if [ ! -f "$ZIP" ]; then
             echo "ERROR: ZIP tidak ditemukan: $ZIP"
-            echo "Daftar file:"
             find . -maxdepth 2 -type f
             exit 1
           fi
@@ -45,11 +44,10 @@ jobs:
           SETTINGS_FILE="$(find proj -type f \( \
             -name settings.gradle \
             -o -name settings.gradle.kts \
-            -o -name settings.gradle.dcl \
           \) -print -quit)"
 
           if [ -z "$SETTINGS_FILE" ]; then
-            echo "ERROR: File Gradle tidak ditemukan dalam ZIP!"
+            echo "ERROR: File settings.gradle tidak ditemukan!"
             find proj -maxdepth 5 -type f
             exit 1
           fi
@@ -60,12 +58,15 @@ jobs:
           echo "Gradle project ditemukan: $PROJECT_DIR"
 
       - name: Build BunnyTL APK
+        shell: bash
         run: |
-          gradle -p "${{ steps.extract.outputs.project_dir }}" assembleDebug --no-daemon --stacktrace
+          cd "${{ steps.extract.outputs.project_dir }}"
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Decode keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.BUNNYTL_KEYSTORE_BASE64 }}
+        shell: bash
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "ERROR: Secret BUNNYTL_KEYSTORE_BASE64 kosong!"
@@ -79,6 +80,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.BUNNYTL_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.BUNNYTL_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.BUNNYTL_KEY_PASSWORD }}
+        shell: bash
         run: |
           APK="${{ steps.extract.outputs.project_dir }}/app/build/outputs/apk/debug/app-debug.apk"
 
