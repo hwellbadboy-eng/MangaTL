@@ -1,5 +1,5 @@
 
-name: Build BunnyTL APK
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
       zip:
         description: "Nama file ZIP proyek"
         required: true
-        default: "Mangatl tahap2.zip"
+        default: "Mangatl tahap1.zip"
 
 jobs:
   build:
@@ -25,85 +25,15 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Extract BunnyTL project
-        id: extract
-        shell: bash
-        run: |
-          mkdir -p proj
+      - name: Extract project
+        run: unzip -q -o "${{ github.event.inputs.zip }}" -d proj
 
-          ZIP="${{ inputs.zip }}"
-
-          if [ ! -f "$ZIP" ]; then
-            echo "ERROR: ZIP tidak ditemukan: $ZIP"
-            find . -maxdepth 2 -type f
-            exit 1
-          fi
-
-          unzip -q -o "$ZIP" -d proj
-
-          SETTINGS_FILE="$(find proj -type f \( \
-            -name settings.gradle \
-            -o -name settings.gradle.kts \
-          \) -print -quit)"
-
-          if [ -z "$SETTINGS_FILE" ]; then
-            echo "ERROR: File settings.gradle tidak ditemukan!"
-            find proj -maxdepth 5 -type f
-            exit 1
-          fi
-
-          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
-
-          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
-          echo "Gradle project ditemukan: $PROJECT_DIR"
-
-      - name: Build BunnyTL APK
-        shell: bash
-        run: |
-          cd "${{ steps.extract.outputs.project_dir }}"
-          gradle assembleDebug --no-daemon --stacktrace
-
-      - name: Decode keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.BUNNYTL_KEYSTORE_BASE64 }}
-        shell: bash
-        run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "ERROR: Secret BUNNYTL_KEYSTORE_BASE64 kosong!"
-            exit 1
-          fi
-
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > bunnytl-release.jks
-
-      - name: Sign BunnyTL APK
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.BUNNYTL_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.BUNNYTL_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.BUNNYTL_KEY_PASSWORD }}
-        shell: bash
-        run: |
-          APK="${{ steps.extract.outputs.project_dir }}/app/build/outputs/apk/debug/app-debug.apk"
-
-          test -f "$APK" || {
-            echo "APK tidak ditemukan: $APK"
-            exit 1
-          }
-
-          BT_VERSION="$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
-          APKSIGNER="$ANDROID_HOME/build-tools/$BT_VERSION/apksigner"
-
-          "$APKSIGNER" sign \
-            --ks bunnytl-release.jks \
-            --ks-key-alias "$KEY_ALIAS" \
-            --ks-pass env:KEYSTORE_PASSWORD \
-            --key-pass env:KEY_PASSWORD \
-            "$APK"
-
-          "$APKSIGNER" verify "$APK"
-
-          rm -f bunnytl-release.jks
+      - name: Build APK
+        working-directory: proj
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BunnyTL-debug-apk
-          path: ${{ steps.extract.outputs.project_dir }}/app/build/outputs/apk/debug/app-debug.apk
+          name: MangaTL-debug-apk
+          path: proj/app/build/outputs/apk/debug/app-debug.apk
+          
