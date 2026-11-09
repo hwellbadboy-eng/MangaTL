@@ -1,3 +1,4 @@
+
 name: Build BunnyTL APK
 
 on:
@@ -26,9 +27,20 @@ jobs:
 
       - name: Extract BunnyTL project
         id: extract
+        shell: bash
         run: |
           mkdir -p proj
-          unzip -q -o "${{ github.event.inputs.zip }}" -d proj
+
+          ZIP="${{ github.event.inputs.zip }}"
+
+          if [ ! -f "$ZIP" ]; then
+            echo "ERROR: ZIP tidak ditemukan: $ZIP"
+            echo "Daftar file:"
+            find . -maxdepth 2 -type f
+            exit 1
+          fi
+
+          unzip -q -o "$ZIP" -d proj
 
           SETTINGS_FILE="$(find proj -type f \( \
             -name settings.gradle \
@@ -37,7 +49,7 @@ jobs:
           \) -print -quit)"
 
           if [ -z "$SETTINGS_FILE" ]; then
-            echo "ERROR: File Gradle tidak ditemukan!"
+            echo "ERROR: File Gradle tidak ditemukan dalam ZIP!"
             find proj -maxdepth 5 -type f
             exit 1
           fi
@@ -55,6 +67,11 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.BUNNYTL_KEYSTORE_BASE64 }}
         run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "ERROR: Secret BUNNYTL_KEYSTORE_BASE64 kosong!"
+            exit 1
+          fi
+
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > bunnytl-release.jks
 
       - name: Sign BunnyTL APK
