@@ -6,7 +6,7 @@ on:
       zip:
         description: "Nama file ZIP proyek"
         required: true
-        default: "BunnyTL_tahap4.zip"
+        default: "BunnyTL_tahap5.zip"
 
 jobs:
   build:
