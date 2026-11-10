@@ -6,7 +6,7 @@ on:
       zip:
         description: "Nama file ZIP proyek"
         required: true
-        default: "BunnyTL_tahap5.zip"
+        default: "BunnyTL_tahap13.zip"
 
 jobs:
   build:
@@ -22,7 +22,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.9"
+          gradle-version: "8.14.4"
 
       - name: Extract project
         run: unzip -q -o "${{ github.event.inputs.zip }}" -d proj
