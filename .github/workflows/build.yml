@@ -6,7 +6,7 @@ on:
       zip:
         description: "Nama file ZIP proyek"
         required: true
-        default: "BunnyTL tahap3.zip"
+        default: "BunnyTL_tahap4.zip"
 
 jobs:
   build:
@@ -26,6 +26,13 @@ jobs:
 
       - name: Extract project
         run: unzip -q -o "${{ github.event.inputs.zip }}" -d proj
+
+      - name: Unduh sherpa-onnx (suara offline)
+        run: |
+          mkdir -p proj/app/libs
+          curl -fL --retry 3 -o proj/app/libs/sherpa-onnx-2.0.1.aar \
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/v2.0.1/sherpa-onnx-2.0.1.aar
+          ls -la proj/app/libs
 
       - name: Build APK
         working-directory: proj
